@@ -9,11 +9,12 @@
         "deploy": "python3 scripts/deploy.py"
     },
     "dependencies": {
-        "express": "^4.18.2",
-        "firebase-admin": "^11.5.0",
+        "bcryptjs": "^3.0.3",
         "cookie-parser": "^1.4.6",
         "cors": "^2.8.5",
-        "dotenv": "^16.0.3"
+        "dotenv": "^16.0.3",
+        "express": "^4.18.2",
+        "firebase-admin": "^11.5.0"
     },
     "devDependencies": {
         "nodemon": "^2.0.21"

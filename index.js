@@ -2,7 +2,7 @@ const express = require('express');
 const admin = require('firebase-admin');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 
 // Firebase Admin SDK 初期化（Cloud Run環境では自動的に認証情報を取得）
 admin.initializeApp({
@@ -23,11 +23,6 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
-
-// --- ヘルパー関数 ---
-const hashPassword = (password) => {
-    return crypto.createHash('sha256').update(password).digest('hex');
-};
 
 // --- API エンドポイント ---
 
@@ -50,7 +45,7 @@ app.post('/login.php', async (req, res) => {
         const userRef = db.collection('users').doc(email);
         const doc = await userRef.get();
 
-        if (!doc.exists || doc.data().password !== hashPassword(password)) {
+        if (!doc.exists || !bcrypt.compareSync(password, doc.data().password)) {
             return res.status(401).json({ status: 'error', message: 'Invalid email or password' });
         }
 
@@ -78,7 +73,7 @@ app.post('/register.php', async (req, res) => {
 
         await userRef.set({
             name: name || 'Hero',
-            password: hashPassword(password),
+            password: bcrypt.hashSync(password, 10),
             save_data: "{}",
             created_at: admin.firestore.FieldValue.serverTimestamp()
         });
