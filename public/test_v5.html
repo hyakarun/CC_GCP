@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ちぇいぷちぷたー（テスト）</title>
+    <link rel="stylesheet" href="css/style.css?v=rarity_bg_fix">
+    <link rel="icon" href="images/logo_bk_1st.png">
+</head>
+
+<body>
+
+    <div id="login-overlay" style="display: none;">
+        <div class="login-box">
+            <img src="images/logo_bk_1st.png" alt="Logo" class="login-logo">
+            <h2 id="login-title">ログイン</h2>
+            <input type="text" id="name" placeholder="プレイヤー名" class="hidden">
+            <input type="email" id="email" placeholder="メールアドレス">
+            <input type="password" id="password" placeholder="パスワード">
+            <p id="login-error" class="error-msg"></p>
+
+            <div id="btn-group-login">
+                <button onclick="doLogin()">ログイン</button>
+                <button class="secondary" onclick="toggleMode()">新規登録へ</button>
+            </div>
+
+            <div id="btn-group-register" class="hidden">
+                <button onclick="doRegister()" style="background-color:#2ecc71;">登録する</button>
+                <button class="secondary" onclick="toggleMode()">ログインへ戻る</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="offline-result-overlay" class="overlay" style="display: none;">
+        <div class="dialog-box">
+            <h3>おかえりなさい！</h3>
+            <p>オフライン期間の成果:</p>
+            <div class="result-row">経過時間: <span id="offline-time">0</span>秒</div>
+            <div class="result-row">倒した敵: <span id="offline-kills">0</span>体</div>
+            <div class="result-row">獲得経験値: <span id="offline-exp">0</span></div>
+            <button onclick="closeOfflineDialog()"
+                style="margin-top:15px; width:100%; padding:8px; cursor:pointer;">OK</button>
+        </div>
+    </div>
+
+    <!-- 装備削除確認ダイアログ -->
+    <div id="delete-confirm-overlay" class="overlay" style="display: none;">
+        <div class="dialog-box" style="width: 320px;">
+            <h3 style="color:#e74c3c; border-color:#e74c3c;">装備を捨てますか？</h3>
+            <p id="delete-target-name" style="font-weight:bold; margin:15px 0;">アイテム名</p>
+            <p style="font-size:12px; color:#666;">この操作は取り消せません。</p>
+
+            <div
+                style="margin: 15px 0; text-align:left; font-size:13px; background:#f9f9f9; padding:10px; border-radius:4px;">
+                <label style="cursor:pointer; display:flex; align-items:center;">
+                    <input type="checkbox" id="chk-skip-confirm" style="width:auto; margin-right:8px;">
+                    今後15分間は確認せずに捨てる
+                </label>
+            </div>
+
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button onclick="executeDelete(document.getElementById('chk-skip-confirm').checked)"
+                    style="background-color:#e74c3c; color:white; border:none; padding:8px 20px; border-radius:4px; cursor:pointer; font-weight:bold;">捨てる</button>
+                <button onclick="closeDeleteDialog()"
+                    style="background-color:#95a5a6; color:white; border:none; padding:8px 20px; border-radius:4px; cursor:pointer; font-weight:bold;">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="adventure-overlay" class="overlay" style="display: none;">
+        <div id="adventure-window" class="adv-popup-window">
+            <!-- キャラクター左右 -->
+            <div id="adv-char-container" style="position: absolute; width: 100%; height: 100%; pointer-events: none;">
+                <img id="adv-char-left" src=""
+                    style="position: absolute; bottom: 60px; left: 0%; height: 42.5%; display: none; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));">
+                <img id="adv-char-right" src=""
+                    style="position: absolute; bottom: 60px; right: 0%; height: 42.5%; display: none; transform: scaleX(-1); filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));">
+            </div>
+
+            <!-- メッセージウィンドウ -->
+            <div id="adv-msg-window" class="adv-window" onclick="nextAdventureMsg()">
+                <div id="adv-name-tag" class="adv-name-tag">名前</div>
+                <div id="adv-msg-text" class="adv-msg-text">ここにメッセージが表示されます。</div>
+                <div class="adv-next-arrow">▼</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-container" style="display:none;">
+
+        <div id="combat-area" style="position:relative;">
+            <canvas id="gameCanvas"></canvas>
+            <div id="combat-log"></div>
+            <button id="debug-speed-btn" onclick="toggleSpeed()"
+                style="position:absolute; top:10px; left:220px; z-index:10; padding:5px 10px; background:rgba(0,0,0,0.5); color:white; border:1px solid #fff; cursor:pointer;">x1</button>
+        </div>
+
+        <div id="bottom-area">
+            <div id="menu-area">
+                <div class="menu-item active" onclick="switchScreen('status')" id="menu-status">ステータス</div>
+                <div class="menu-item" onclick="switchScreen('skill')" id="menu-skill">スキル</div>
+                <div class="menu-item" onclick="switchScreen('story')" id="menu-story">ストーリー</div>
+                <div class="menu-item" onclick="switchScreen('story')" id="menu-story">ストーリー</div>
+                <div class="menu-item" onclick="switchScreen('dungeon')" id="menu-dungeon">ダンジョン</div>
+                <div class="menu-item" onclick="switchScreen('equipment')" id="menu-equipment">装備</div>
+                <div class="menu-item" onclick="doLogout()" style="margin-top:auto; background-color:#c0392b;">ログアウト
+                </div>
+            </div>
+
+            <div id="info-area">
+            </div>
+
+            <div id="details-area">
+
+                <div id="screen-status" class="screen-content">
+                    <!-- ...内容... -->
+                </div>
+
+                <!-- スキル画面 (新規追加) -->
+                <div id="screen-skill" class="screen-content" style="display: none;">
+                    <h3>スキル</h3>
+                    <p style="text-align: center; margin-top: 50px; color: #7f8c8d;">Coming Soon...</p>
+                </div>
+
+                <div id="screen-story" class="screen-content" style="display: none;">
+                    <div class="story-tabs">
+                        <button class="tab-btn active" onclick="switchStoryTab('main')" id="story-tab-main">メイン</button>
+                        <button class="tab-btn" onclick="switchStoryTab('sub')" id="story-tab-sub">サブ</button>
+                    </div>
+                    <div id="story-list-container" class="story-list" style="padding: 20px;">
+                        <p id="story-placeholder-text">メインストーリーは現在準備中です。</p>
+                    </div>
+                </div>
+
+
+                <div id="screen-dungeon" class="screen-content" style="display: none;">
+                    <div class="dungeon-tabs">
+                        <button class="tab-btn active" onclick="switchDungeonTab('normal')"
+                            id="tab-normal">通常ダンジョン</button>
+                        <button class="tab-btn" onclick="switchDungeonTab('event')" id="tab-event">イベントダンジョン</button>
+                    </div>
+                    <div class="dungeon-list">
+                        <p style="text-align:center; padding:20px; color:#666;">ダンジョンデータを読み込み中...</p>
+                    </div>
+                </div>
+
+                <div id="screen-equipment" class="screen-content" style="display: none;">
+                    <div class="equipment-v2-layout">
+                        <!-- 1. 現在の装備 (左列) -->
+                        <div class="equip-col current-equip">
+                            <h3>現在の装備</h3>
+                            <div id="current-slots-list" class="vertical-slots">
+                                <!-- JSで動的に生成: 全12部位 -->
+                            </div>
+                        </div>
+
+                        <!-- 2. 変更候補 (中央列) -->
+                        <div class="equip-col candidate-list">
+                            <h3>変更候補 (<span id="selected-part-name">部位を選択</span>) <button id="btn-debug-clear-inv"
+                                    style="font-size:10px; background:red; color:white; border:none; border-radius:3px; cursor:pointer; display:none;">全削除(Dev)</button>
+                            </h3>
+                            <div id="candidate-items-container" class="vertical-items">
+                                <!-- 選択中の部位に合うインベントリ内のアイテムを表示 -->
+                                <p class="empty-msg">部位を選択してください</p>
+                            </div>
+                        </div>
+
+                        <!-- 3. ステータス変動 (右列) -->
+                        <div class="equip-col stat-comparison">
+                            <h3>ステータス変動</h3>
+                            <div id="comparison-details" class="comparison-box">
+                                <div class="comp-row"><span>HP:</span>
+                                    <div><span id="curr-hp">0</span> <span id="diff-hp">--</span></div>
+                                </div>
+                                <div class="comp-row"><span>STR:</span>
+                                    <div><span id="curr-str">0</span> <span id="diff-str">--</span></div>
+                                </div>
+                                <div class="comp-row"><span>VIT:</span>
+                                    <div><span id="curr-vit">0</span> <span id="diff-vit">--</span></div>
+                                </div>
+                                <div class="comp-row"><span>AGI:</span>
+                                    <div><span id="curr-agi">0</span> <span id="diff-agi">--</span></div>
+                                </div>
+                                <div class="comp-row"><span>INT:</span>
+                                    <div><span id="curr-int">0</span> <span id="diff-int">--</span></div>
+                                </div>
+                                <div class="comp-row"><span>DEX:</span>
+                                    <div><span id="curr-dex">0</span> <span id="diff-dex">--</span></div>
+                                </div>
+                                <div class="comp-row"><span>LUK:</span>
+                                    <div><span id="curr-luk">0</span> <span id="diff-luk">--</span></div>
+                                </div>
+                                <div class="comp-row"><span>ATK:</span>
+                                    <div><span id="curr-atk">0</span> <span id="diff-atk">--</span></div>
+                                </div>
+                                <div class="comp-row"><span>MATK:</span>
+                                    <div><span id="curr-matk">0</span> <span id="diff-matk">--</span></div>
+                                </div>
+                                <div class="comp-row"><span>DEF:</span>
+                                    <div><span id="curr-def">0</span> <span id="diff-def">--</span></div>
+                                </div>
+                                <div class="comp-row"><span>MDEF:</span>
+                                    <div><span id="curr-mdef">0</span> <span id="diff-mdef">--</span></div>
+                                </div>
+                                <div class="comp-row"><span>HIT:</span>
+                                    <div><span id="curr-hit">0</span> <span id="diff-hit">--</span></div>
+                                </div>
+                                <div class="comp-row"><span>EVA:</span>
+                                    <div><span id="curr-eva">0</span> <span id="diff-eva">--</span></div>
+                                </div>
+                                <div class="comp-row"><span>CRI:</span>
+                                    <div><span id="curr-cri">0</span> <span id="diff-cri">--</span></div>
+                                </div>
+                                <div class="comp-row"><span>RES:</span>
+                                    <div><span id="curr-res">0</span> <span id="diff-res">--</span></div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <div id="dev-tag"
+        style="display:none; position:fixed; top:0; right:0; background:rgba(231, 76, 60, 0.8); color:white; padding:5px 15px; font-size:12px; font-weight:bold; z-index:9999; pointer-events:none; border-bottom-left-radius:8px;">
+        DEV MODE</div>
+
+    <script src="js/game.js?v=options_v15"></script>
+    <script>
+        // 環境によるUI調整
+        const isStaging = window.location.pathname.includes('/dev/');
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+        if (isStaging || isLocal) {
+            document.getElementById('dev-tag').style.display = 'block';
+            document.body.style.backgroundColor = '#001a00'; // 開発用：深い緑
+            const resetSec = document.getElementById('reset-section');
+            if (resetSec) resetSec.style.display = 'block';
+        } else {
+            // 本番環境ではデバッグ機能を隠容
+            const speedBtn = document.getElementById('debug-speed-btn');
+            if (speedBtn) speedBtn.style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>

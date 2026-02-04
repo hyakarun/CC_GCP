@@ -12,6 +12,10 @@ const db = admin.firestore();
 
 const app = express();
 
+// --- 静的ファイルの配信設定 ---
+// public フォルダ内の HTML, CSS, JS などを配信します
+app.use(express.static('public'));
+
 // ミドルウェア設定
 app.use(cors({
     origin: true, // 全ドメイン許可（開発中）
