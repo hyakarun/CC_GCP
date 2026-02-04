@@ -1,0 +1,24 @@
+{
+    "name": "cheychipr-backend",
+    "version": "1.0.0",
+    "description": "CheychipR Backend for GCP Cloud Run",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js",
+        "dev": "nodemon index.js",
+        "deploy": "python3 scripts/deploy.py"
+    },
+    "dependencies": {
+        "express": "^4.18.2",
+        "firebase-admin": "^11.5.0",
+        "cookie-parser": "^1.4.6",
+        "cors": "^2.8.5",
+        "dotenv": "^16.0.3"
+    },
+    "devDependencies": {
+        "nodemon": "^2.0.21"
+    },
+    "engines": {
+        "node": ">=16.0.0"
+    }
+}
