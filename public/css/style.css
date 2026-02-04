@@ -1117,4 +1117,85 @@ hr {
 .skill-slot-content {
     width: 100%;
     height: 100%;
+}.job-cat-btn {
+    padding: 12px 15px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: left;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.2s;
+    color: #495057;
+}
+
+.job-cat-btn:hover {
+    background: #e9ecef;
+}
+
+.job-cat-btn.active {
+    background: #3498db;
+    color: white;
+    border-color: #2980b9;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.job-card {
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    background: #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    transition: transform 0.2s;
+}
+
+.job-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+/* 職業別専用画面用スタイル */
+.job-module {
+    background: #fdfdfd;
+    border: 1px solid #eee;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.job-module h4 {
+    margin: 0 0 10px 0;
+    color: #2c3e50;
+    font-size: 14px;
+    border-left: 3px solid #3498db;
+    padding-left: 8px;
+}
+
+.progress-container {
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.progress-fill {
+    transition: width 0.1s linear;
+}
+
+.craft-gauge-area {
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+    border: 1px solid #ccc;
+}
+
+#craft-cursor {
+    z-index: 5;
+}
+
+#craft-target-zone {
+    z-index: 2;
+}
+
+#miner-log p {
+    margin: 3px 0;
+    border-bottom: 1px dashed #eee;
+    padding-bottom: 2px;
 }

@@ -21,7 +21,7 @@ window.addEventListener('keydown', (e) => {
 // --- 繧ｲ繝ｼ繝險ｭ螳 ---
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
-const API_BASE = CONFIG.API_BASE_URL;
+const API_BASE = "api";
 
 // ★追加: 現在ログイン中のユーザーID（メールアドレス）を保持する変数
 let currentUserEmail = "";
@@ -82,6 +82,30 @@ let player = {
     sub2: null
   },
   inventory: [],
+  // 職業システム
+  currentJob: "adventurer",
+  jobData: {
+    adventurer: { lv: 1, exp: 0, nextExp: 100 },
+    miner: { lv: 1, exp: 0, nextExp: 100 },
+    harvester: { lv: 1, exp: 0, nextExp: 100 },
+    toolsmith: { lv: 1, exp: 0, nextExp: 100 },
+    blacksmith: { lv: 1, exp: 0, nextExp: 100 },
+    repairer: { lv: 1, exp: 0, nextExp: 100 },
+    farmer: { lv: 1, exp: 0, nextExp: 100 },
+    rancher: { lv: 1, exp: 0, nextExp: 100 }
+  },
+};
+
+// 職業マスタデータ（補正倍率など）
+const JOB_MASTER = {
+  adventurer: { name: "冒険者", bonus: { str: 1.0, vit: 1.0, agi: 1.0, int: 1.0, dex: 1.0, luk: 1.0 } },
+  miner: { name: "炭鉱夫", bonus: { str: 1.1, vit: 1.2, agi: 0.9, int: 0.8, dex: 1.0, luk: 1.1 } },
+  harvester: { name: "採取家", bonus: { str: 0.9, vit: 1.0, agi: 1.1, int: 1.0, dex: 1.1, luk: 1.2 } },
+  toolsmith: { name: "道具職人", bonus: { str: 0.8, vit: 0.9, agi: 1.0, int: 1.2, dex: 1.3, luk: 1.0 } },
+  blacksmith: { name: "武具職人", bonus: { str: 1.2, vit: 1.1, agi: 0.8, int: 0.9, dex: 1.1, luk: 1.0 } },
+  repairer: { name: "修繕屋", bonus: { str: 0.8, vit: 1.0, agi: 0.9, int: 1.3, dex: 1.2, luk: 1.1 } },
+  farmer: { name: "農家", bonus: { str: 1.0, vit: 1.1, agi: 1.1, int: 0.9, dex: 1.0, luk: 1.1 } },
+  rancher: { name: "酪農家", bonus: { str: 1.1, vit: 1.2, agi: 0.9, int: 0.8, dex: 1.0, luk: 1.2 } }
 };
 
 let enemies = [];
@@ -371,7 +395,7 @@ window.changeDungeon = function (dungeonId) {
 
 window.switchScreen = function (screenName) {
   // 画面リスト
-  const screens = ["status", "skill", "story", "dungeon", "equipment", "ranking"];
+  const screens = ["status", "skill", "story", "dungeon", "job", "equipment", "ranking"];
   screens.forEach((s) => {
     const el = document.getElementById("screen-" + s);
     if (el) el.style.display = "none";
@@ -381,7 +405,7 @@ window.switchScreen = function (screenName) {
 
   const targetScreen = document.getElementById("screen-" + screenName);
   if (targetScreen) {
-    if (screenName === "dungeon") {
+    if (screenName === "dungeon" || screenName === "job") {
       targetScreen.style.display = "flex";
     } else {
       targetScreen.style.display = "block";
@@ -403,6 +427,8 @@ window.switchScreen = function (screenName) {
     switchStoryTab('main');
   } else if (screenName === "ranking") {
     loadAndRenderRanking();
+  } else if (screenName === "job") {
+    renderJobScreen();
   }
 };
 
@@ -1122,19 +1148,30 @@ function calcBattleStats() {
     }
   }
 
+  // --- ジョブ補正 ---
+  const currentJob = player.currentJob || "adventurer";
+  const job = JOB_MASTER[currentJob] || JOB_MASTER.adventurer;
+  const jb = job.bonus || { str: 1.0, vit: 1.0, agi: 1.0, int: 1.0, dex: 1.0, luk: 1.0 };
+
+  if (!player.jobData) player.jobData = {};
+  if (!player.jobData[currentJob]) {
+    player.jobData[currentJob] = { lv: 1, exp: 0, nextExp: 100 };
+  }
+  const jlv = player.jobData[currentJob].lv;
+
   // --- 1. HP計算 ---
-  const vitTotal = (s.vit || 0) + bonus.vit;
+  const vitTotal = Math.floor(((s.vit || 0) + bonus.vit) * jb.vit);
   player.maxHp = 100 + (lv - 1) * 10 + vitTotal * 5 + bonus.hp;
 
   if (player.hp > player.maxHp) player.hp = player.maxHp;
   if (player.hp <= 0) player.hp = player.maxHp;
 
-  // ステータス値の安全な取得
-  const strTotal = (s.str || 0) + bonus.str;
-  const intTotal = (s.int || 0) + bonus.int;
-  const dexTotal = (s.dex || 0) + bonus.dex;
-  const agiTotal = (s.agi || 0) + bonus.agi;
-  const lukTotal = (s.luk || 0) + bonus.luk;
+  // ステータス値の安全な取得 (ジョブ補正適用)
+  const strTotal = Math.floor(((s.str || 0) + bonus.str) * jb.str);
+  const intTotal = Math.floor(((s.int || 0) + bonus.int) * jb.int);
+  const dexTotal = Math.floor(((s.dex || 0) + bonus.dex) * jb.dex);
+  const agiTotal = Math.floor(((s.agi || 0) + bonus.agi) * jb.agi);
+  const lukTotal = Math.floor(((s.luk || 0) + bonus.luk) * jb.luk);
 
   // --- ATK (物理攻撃力) ---
   b.atk = Math.floor(strTotal / 2 + lukTotal * 0.1) + bonus.atk;
@@ -1252,6 +1289,14 @@ async function loadGame() {
       if (!player.skills) player.skills = {};
       if (player.skill_sp == null) player.skill_sp = 0;
       if (!player.skill_cooldowns) player.skill_cooldowns = {};
+
+      // 職業用フィールドの初期化
+      if (!player.currentJob) player.currentJob = "adventurer";
+      if (!player.jobData) {
+        player.jobData = {
+          adventurer: { lv: 1, exp: 0, nextExp: 100 }
+        };
+      }
 
       // コード側の定義値を強制適用
       Object.assign(player, defaultProps);
@@ -1872,6 +1917,8 @@ function checkLevelUp() {
 function gainExp(amount) {
   player.exp += amount;
   checkLevelUp();
+  // ジョブ経験値も獲得 (通常の半分+α)
+  gainJExp(Math.floor(amount / 2) + 1);
   addCombatLog(`+${amount} EXP`, "#2ecc71");
   updateUI();
 }
@@ -2071,6 +2118,7 @@ function safeWidth(id, percent) {
   if (el) el.style.width = percent + "%";
 }
 
+// 画面UIを更新
 function updateUI() {
   safeText("val-lv", player.lv);
   safeText("val-hp", Math.floor(player.hp));
@@ -2081,6 +2129,11 @@ function updateUI() {
   safeWidth("bar-exp", (player.exp / player.nextExp) * 100);
   safeText("val-sp", player.sp);
   safeText("val-money", player.money);
+
+  // 職業ボタンの名称更新
+  const currentJobId = player.currentJob || "adventurer";
+  const jobName = (JOB_MASTER[currentJobId] ? JOB_MASTER[currentJobId].name : "職業");
+  safeText("menu-job", jobName);
 
   // 装備ボーナスの集計 (表示用)
   let bonus = { str: 0, vit: 0, agi: 0, int: 0, dex: 0, luk: 0 };
@@ -2473,4 +2526,196 @@ window.updateCombatSkillUI = function () {
       overlay.style.height = height;
     }
   });
+};
+
+window.renderJobScreen = function () {
+  console.log("Rendering Job Screen...");
+  const currentJob = player.currentJob || "adventurer";
+
+  if (currentJob === "adventurer") {
+    showJobSelection();
+  } else {
+    renderSpecificJobScreen(currentJob);
+  }
+};
+
+window.renderSpecificJobScreen = function (jobId) {
+  const selectionView = document.getElementById('job-selection-view');
+  const specificView = document.getElementById('job-specific-view');
+  if (selectionView) selectionView.style.display = 'none';
+  if (specificView) {
+    specificView.style.display = 'flex';
+
+    // 職業名の反映
+    const jobInfo = JOB_MASTER[jobId];
+    const specTitle = document.getElementById('job-spec-title');
+    const specName = document.getElementById('job-spec-name');
+
+    if (specTitle) specTitle.innerText = jobInfo ? jobInfo.name : jobId;
+    if (specName) specName.innerText = jobInfo ? jobInfo.name : jobId;
+  }
+};
+
+window.showJobSelection = function () {
+  const selectionView = document.getElementById('job-selection-view');
+  const specificView = document.getElementById('job-specific-view');
+  if (specificView) specificView.style.display = 'none';
+  if (selectionView) {
+    selectionView.style.display = 'flex';
+    // デフォルトでクラフターを選択表示
+    switchJobCategory('crafter');
+  }
+};
+
+window.changeJob = function (jobId) {
+  if (!JOB_MASTER[jobId]) return;
+  if (player.currentJob === jobId) {
+    alert("既にその職業に就いています。");
+    return;
+  }
+
+  if (confirm(`${JOB_MASTER[jobId].name}に転職しますか？`)) {
+    player.currentJob = jobId;
+    calcBattleStats();
+    updateStatusDisplay();
+    renderJobScreen();
+    saveGame();
+    addCombatLog(`${JOB_MASTER[jobId].name}に転職しました！`, "#3498db");
+  }
+};
+
+window.gainJExp = function (amount) {
+  const currentJobId = player.currentJob || "adventurer";
+  if (!player.jobData) player.jobData = {};
+  if (!player.jobData[currentJobId]) {
+    player.jobData[currentJobId] = { lv: 1, exp: 0, nextExp: 100 };
+  }
+
+  const jd = player.jobData[currentJobId];
+  if (!jd) return; // 本来ありえないが念のため
+  jd.exp += amount;
+
+  while (jd.exp >= jd.nextExp) {
+    jd.exp -= jd.nextExp;
+    jd.lv++;
+    jd.nextExp = Math.floor(jd.nextExp * 1.2) + 50;
+    addCombatLog(`ジョブレベルアップ！ ${JOB_MASTER[currentJobId] ? JOB_MASTER[currentJobId].name : currentJobId} Lv${jd.lv}`, "#f1c40f");
+
+    calcBattleStats();
+    updateStatusDisplay();
+  }
+
+  const jobScreen = document.getElementById('screen-job');
+  if (jobScreen && jobScreen.style.display !== 'none') {
+    updateJobUI();
+  }
+};
+
+function updateJobUI() {
+  if (!player.jobData) return;
+  const jd = player.jobData[player.currentJob];
+  const currentJobNameEl = document.getElementById("current-job-name");
+  const currentJobLevelEl = document.getElementById("current-job-level");
+
+  if (currentJobNameEl && JOB_MASTER[player.currentJob]) {
+    currentJobNameEl.innerText = JOB_MASTER[player.currentJob].name;
+  }
+  if (currentJobLevelEl && jd) {
+    currentJobLevelEl.innerText = jd.lv;
+  }
+}
+
+window.switchJobCategory = function (category) {
+  const categories = {
+    'crafter': {
+      title: 'クラフター',
+      text: '素材を精製・加工し、武具や道具を創り出す職人たちのカテゴリー。経済の循環を支える中心的な役割を担います。',
+      jobs: [
+        { id: 'blacksmith', name: '武具職人', desc: '武器や防具を製造する' },
+        { id: 'toolsmith', name: '道具職人', desc: '採取・製造用の道具を作る' },
+        { id: 'repairer', name: '修繕屋', desc: '装備の耐久度を回復させる' }
+      ]
+    },
+    'gatherer': {
+      title: 'ギャザラー',
+      text: '自然界から鉱石や植物などの原資材を採取するカテゴリー。すべての製造の起点となる素材を市場に供給します。',
+      jobs: [
+        { id: 'miner', name: '炭鉱夫', desc: '地下資源を採掘する' },
+        { id: 'harvester', name: '採取家', desc: '植物や薬草を採集する' }
+      ]
+    },
+    'farmer': {
+      title: 'ファーマー',
+      text: '土地を耕し、食料品や家畜素材を生産するカテゴリー。スタミナ回復やバフ効果を持つ食料の原料を供給します。',
+      jobs: [
+        { id: 'farmer', name: '農家', desc: '穀物や野菜を育てる' },
+        { id: 'rancher', name: '酪農家', desc: '畜産素材を入手する' }
+      ]
+    }
+  };
+
+  const data = categories[category];
+  if (!data) return;
+
+  const titleEl = document.getElementById('job-cat-title');
+  const textEl = document.getElementById('job-cat-text');
+  if (titleEl) titleEl.innerText = data.title;
+  if (textEl) textEl.innerText = data.text;
+
+  const buttons = document.querySelectorAll('.job-cat-btn');
+  buttons.forEach(btn => btn.classList.remove('active'));
+  const activeBtn = document.getElementById(`job-cat-${category}`);
+  if (activeBtn) activeBtn.classList.add('active');
+
+  const jobListEl = document.getElementById("job-list");
+  if (!jobListEl) return;
+  jobListEl.innerHTML = "";
+
+  data.jobs.forEach(job => {
+    const jd = (player.jobData && player.jobData[job.id]) ? player.jobData[job.id] : { lv: 1, exp: 0, nextExp: 100 };
+    const isCurrent = player.currentJob === job.id;
+
+    const card = document.createElement('div');
+    card.className = 'job-card';
+    card.style.border = isCurrent ? '2px solid #3498db' : '1px solid #ddd';
+    card.style.position = 'relative';
+    // カード自体もFlex化して中身を上下配置
+    card.style.display = 'flex';
+    card.style.flexDirection = 'column';
+    card.style.justifyContent = 'space-between';
+    card.style.padding = '10px';
+    card.style.backgroundColor = '#fff';
+    card.style.borderRadius = '6px';
+    card.style.minHeight = '300px';
+    // 最大幅制限 (伸縮対策)
+    card.style.width = '100%';
+    card.style.maxWidth = '300px';
+
+    const expPercent = Math.min(100, (jd.exp / jd.nextExp) * 100);
+
+    card.innerHTML = `
+      ${isCurrent ? '<span style="position:absolute; top:-10px; right:10px; background:#3498db; color:white; font-size:10px; padding:2px 6px; border-radius:10px;">就業中</span>' : ''}
+      <div>
+        <p style="font-weight:bold; margin:0 0 5px 0;">${job.name}</p>
+        <p style="font-size:11px; color:#666; margin:0 0 10px 0;">Lv.${jd.lv}</p>
+        <div style="width:100%; height:4px; background:#eee; border-radius:2px; margin-bottom:10px; overflow:hidden;">
+          <div style="width:${expPercent}%; height:100%; background:#f1c40f;"></div>
+        </div>
+        <p style="font-size:12px; color:#444; margin:0;">${job.desc}</p>
+      </div>
+      <div style="margin-top: 15px;">
+      ${isCurrent
+        ? '<button disabled style="width:100%; font-size:12px; padding:6px; background:#bdc3c7; color:white; border:none; border-radius:4px;">就業中</button>'
+        : `<button onclick="changeJob('${job.id}')" style="width:100%; font-size:12px; padding:6px; background:#3498db; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">転職する</button>`
+      }
+      </div>
+    `;
+    jobListEl.appendChild(card);
+  });
+};
+// エイリアス定義 (後方互換性のため)
+window.updateStatusDisplay = function () {
+  if (typeof updateUI === "function") {
+    updateUI();
+  }
 };

@@ -4,10 +4,22 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
 
-// Firebase Admin SDK 初期化（Cloud Run環境では自動的に認証情報を取得）
-admin.initializeApp({
-    credential: admin.credential.applicationDefault()
-});
+// Firebase Admin SDK 初期化
+// 環境変数（FIRESTORE_EMULATOR_HOST）がある場合は自動的にエミュレータに接続されます
+try {
+    admin.initializeApp({
+        credential: admin.credential.applicationDefault()
+    });
+} catch (e) {
+    // ローカル環境などで認証情報がない場合は警告を出す（デプロイ済み環境では必須）
+    if (!process.env.FIRESTORE_EMULATOR_HOST) {
+        console.warn("Firebase Admin couldn't be initialized normally. Check credentials if not running in Emulator.");
+    }
+    // エミュレータ時は初期化が不完全でも動作することがあるので継続
+    if (admin.apps.length === 0) {
+        admin.initializeApp();
+    }
+}
 const db = admin.firestore();
 
 const app = express();
