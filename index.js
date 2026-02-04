@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const admin = require('firebase-admin');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -25,8 +26,8 @@ const db = admin.firestore();
 const app = express();
 
 // --- 静的ファイルの配信設定 ---
-// public フォルダ内の HTML, CSS, JS などを配信します
-app.use(express.static('public'));
+// public フォルダ内の HTML, CSS, JS などを優先的に配信します
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ミドルウェア設定
 app.use(cors({
@@ -132,9 +133,9 @@ app.get('/load_game.php', async (req, res) => {
     }
 });
 
-// ヘルスチェック用
-app.get('/', (req, res) => {
-    res.send('CheychipR GCP Backend is running.');
+// 画面配信 (SPA対応: 見つからないパスは index.html を返す)
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 const PORT = process.env.PORT || 8080;

@@ -6,7 +6,7 @@
     "scripts": {
         "start": "node index.js",
         "dev": "nodemon index.js",
-        "dev-emulator": "export FIRESTORE_EMULATOR_HOST='127.0.0.1:8080' && concurrently \"firebase emulators:start --only firestore\" \"nodemon index.js\"",
+        "dev-emulator": "export FIRESTORE_EMULATOR_HOST='127.0.0.1:8081' && concurrently \"firebase emulators:start --only firestore\" \"nodemon index.js\"",
         "deploy": "python3 scripts/deploy.py"
     },
     "dependencies": {
