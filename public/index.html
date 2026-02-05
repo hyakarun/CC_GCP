@@ -7,6 +7,22 @@
     <title>ちぇいぷちぷたー（テスト）</title>
     <link rel="stylesheet" href="css/style.css?v=skill_ui_v10_small_icons">
     <link rel="icon" href="images/slime.png">
+    <script>
+        window.onerror = function(msg, url, line, col, error) {
+            const errorMsg = "JS Error: " + msg + "\nURL: " + url + "\nL: " + line + ":" + col;
+            console.error(errorMsg);
+            if (!window.location.hostname.includes('localhost')) {
+                // Add to body instead of alert to be less intrusive but visible
+                const div = document.createElement('div');
+                div.style.position = 'fixed'; div.style.bottom = '0'; div.style.left = '0'; 
+                div.style.background = 'rgba(255,0,0,0.8)'; div.style.color = 'white';
+                div.style.padding = '10px'; div.style.zIndex = '10000'; div.style.fontSize = '12px';
+                div.innerText = errorMsg;
+                document.body.appendChild(div);
+            }
+            return false;
+        };
+    </script>
 </head>
 
 <body>
@@ -123,7 +139,8 @@
                         <div class="status-row">
                             <span id="val-name" style="margin-right:10px; font-weight:bold;"></span>
                             <span class="label">Lv:</span> <span id="val-lv" class="val-big">1</span>
-                            <span style="font-size:14px; color:black; text-shadow:none; margin-left: auto;">
+                            <span style="font-size:14px; color:black; text-shadow:none; margin-left: auto; display: flex; align-items: center; gap: 10px;">
+                                <button id="btn-news" onclick="openNews()" style="font-size: 11px; padding: 2px 8px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">お知らせ</button>
                                 <span id="val-money">0</span> Mumel
                             </span>
                         </div>
@@ -275,50 +292,87 @@
                             </p>
 
                             <div id="job-spec-content" style="margin-bottom: 30px;">
-                                <!-- 炭鉱夫 UI -->
-                                <div id="miner-ui" style="display:none;">
-                                    <div class="job-module">
-                                        <h4>採掘状況</h4>
-                                        <div class="progress-container"
-                                            style="height: 20px; background: #eee; border-radius: 10px; margin: 15px 0; overflow: hidden;">
-                                            <div id="miner-progress" class="progress-fill"
-                                                style="width: 0%; height: 100%; background: #7f8c8d; transition: width 0.1s linear;">
-                                            </div>
-                                        </div>
-                                        <p id="miner-status-text" style="font-size: 14px; color: #7f8c8d;">採掘中...</p>
+                                <!-- 共通の進捗エリア (必要に応じて表示) -->
+                                <div id="job-common-progress" style="display:none; margin-bottom: 20px;">
+                                    <div class="progress-container" style="height: 12px; background: #eee; border-radius: 6px; overflow: hidden;">
+                                        <div id="job-progress-bar" style="width: 0%; height: 100%; background: #3498db; transition: width 0.1s linear;"></div>
                                     </div>
-                                    <div class="job-module" style="margin-top: 20px; text-align: left;">
-                                        <h4>採取ログ</h4>
-                                        <div id="miner-log"
-                                            style="height: 100px; border: 1px solid #eee; border-radius: 4px; padding: 10px; font-size: 12px; overflow-y: auto; background: #fafafa;">
-                                            <p style="color:#999;">採掘を開始するとここに表示されます。</p>
+                                    <p id="job-status-text" style="font-size: 12px; margin-top: 5px; color: #666;">準備中...</p>
+                                </div>
+
+                                <!-- 1. 武器職人: ゲージ長押し -->
+                                <div id="blacksmith-ui" style="display:none;">
+                                    <div class="job-module">
+                                        <h4>武器鍛錬</h4>
+                                        <div class="craft-gauge-area" style="position: relative; height: 40px; background: #eee; border-radius: 20px; margin: 20px 0; overflow: hidden; border: 2px solid #333;">
+                                            <div id="bs-target-zone" style="position: absolute; height: 100%; width: 15%; left: 75%; background: #2ecc71; opacity: 0.6;"></div>
+                                            <div id="bs-current-gauge" style="position: absolute; height: 100%; width: 0%; left: 0; background: #e67e22;"></div>
+                                        </div>
+                                        <p style="font-size: 11px; color:#c0392b;">【長押し】目標ゾーンを目指してゲージを溜めろ！</p>
+                                        <button id="btn-bs-action" onmousedown="startBsGauge()" onmouseup="endBsGauge()" ontouchstart="startBsGauge()" ontouchend="endBsGauge()"
+                                            style="padding: 15px 40px; font-size: 18px; background: #e67e22; color: white; border: none; border-radius: 30px; cursor: pointer; font-weight: bold; user-select: none;">
+                                            鍛える！
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 2. 防具職人: リズムクリック -->
+                                <div id="armorsmith-ui" style="display:none;">
+                                    <div class="job-module">
+                                        <h4>防具成形</h4>
+                                        <div style="position: relative; height: 60px; background: #34495e; border-radius: 10px; margin: 20px 0; overflow: hidden;">
+                                            <div id="as-beat-line" style="position: absolute; height: 100%; width: 20px; left: 50%; transform: translateX(-50%); border-left: 2px dashed #fff; border-right: 2px dashed #fff; background: rgba(255,255,255,0.1);"></div>
+                                            <div id="as-cursor" style="position: absolute; height: 100%; width: 8px; left: 0%; background: #f1c40f; box-shadow: 0 0 10px #f1c40f;"></div>
+                                        </div>
+                                        <p style="font-size: 11px; color:#c0392b;">流れてくる光が中央に来た瞬間に叩け！</p>
+                                        <button onclick="handleAsClick()" style="padding: 15px 40px; font-size: 18px; background: #2980b9; color: white; border: none; border-radius: 30px; cursor: pointer;">
+                                            叩く！
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 3. 道具職人: タイピング -->
+                                <div id="toolsmith-ui" style="display:none;">
+                                    <div class="job-module">
+                                        <h4>道具作成</h4>
+                                        <div style="background: #2c3e50; color: #2ecc71; padding: 20px; font-family: monospace; font-size: 24px; border-radius: 8px; margin-bottom: 10px; letter-spacing: 4px;">
+                                            <span id="ts-word-display">READY</span>
+                                        </div>
+                                        <input type="text" id="ts-input" placeholder="ここに入力..." oninput="checkTsInput()"
+                                            style="width: 80%; padding: 10px; font-size: 18px; text-align: center; border: 2px solid #bdc3c7; border-radius: 4px;">
+                                    </div>
+                                </div>
+
+                                <!-- 4. ギャザラー (炭鉱夫/採取家): 放置 -->
+                                <div id="gatherer-ui" style="display:none;">
+                                    <div class="job-module">
+                                        <h4 id="gather-title">採取中...</h4>
+                                        <div class="progress-container" style="height: 25px; background: #eee; border-radius: 15px; margin: 20px 0; overflow: hidden; border: 1px solid #ddd;">
+                                            <div id="gather-progress" style="width: 0%; height: 100%; background: #27ae60; transition: width 0.1s linear;"></div>
+                                        </div>
+                                        <div id="gather-log" style="height: 100px; border: 1px solid #eee; border-radius: 4px; padding: 10px; font-size: 12px; overflow-y: auto; background: #fafafa; text-align: left;">
+                                            <p style="color:#999;">採取を開始しています。</p>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- 武具職人 UI -->
-                                <div id="blacksmith-ui" style="display:none;">
+                                <!-- 5. ファーマー (農家/酪農家): 育成 -->
+                                <div id="farmer-ui" style="display:none;">
                                     <div class="job-module">
-                                        <h4>武具製作（試作）</h4>
-                                        <div class="craft-gauge-area"
-                                            style="position: relative; height: 40px; background: #eee; border-radius: 20px; margin: 30px 0; overflow: hidden;">
-                                            <!-- 目標エリア -->
-                                            <div id="craft-target-zone"
-                                                style="position: absolute; height: 100%; width: 20%; left: 70%; background: #2ecc71; opacity: 0.6;">
-                                            </div>
-                                            <!-- カーソル -->
-                                            <div id="craft-cursor"
-                                                style="position: absolute; height: 100%; width: 4px; left: 0%; background: #e74c3c; box-shadow: 0 0 5px rgba(0,0,0,0.3);">
-                                            </div>
+                                        <h4 id="farm-title">育成中</h4>
+                                        <div style="font-size: 50px; margin: 10px 0;" id="farm-emoji">🌱</div>
+                                        <div class="progress-container" style="height: 15px; background: #eee; border-radius: 10px; margin: 10px 0; overflow: hidden;">
+                                            <div id="farm-progress" style="width: 0%; height: 100%; background: #f1c40f;"></div>
                                         </div>
-                                        <button id="btn-craft-action" onclick="handleCraftAction()"
-                                            style="padding: 15px 40px; font-size: 18px; background: #e67e22; color: white; border: none; border-radius: 30px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 0 #d35400;">
-                                            打つ！
+                                        <p id="farm-status" style="font-size: 14px; margin-bottom: 15px;">成長を待っています...</p>
+                                        <button onclick="handleFarmAction()" id="btn-farm-action"
+                                            style="padding: 10px 30px; background: #27ae60; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: bold;">
+                                            世話をする
                                         </button>
-                                        <div id="craft-result-msg"
-                                            style="margin-top: 15px; font-weight: bold; min-height: 1.2em;"></div>
                                     </div>
                                 </div>
+
+                                <div id="job-result-msg" style="margin-top: 15px; font-weight: bold; min-height: 1.2em; color: #e67e22;"></div>
                             </div>
 
                             <button onclick="showJobSelection()"
@@ -414,12 +468,15 @@
         style="display:none; position:fixed; top:0; right:0; background:rgba(231, 76, 60, 0.8); color:white; padding:5px 15px; font-size:12px; font-weight:bold; z-index:9999; pointer-events:none; border-bottom-left-radius:8px;">
         DEV MODE</div>
 
-    <script src="js/config.js"></script>
-    <script src="js/game.js?v=fix_recursion_v2"></script>
+    <script src="js/config.js?v=gcp_v3"></script>
+    <script src="js/game.js?v=gcp_v3"></script>
     <script>
         // 環境によるUI調整
+        console.log("[System] Initializing UI adjustment...");
         const isStaging = window.location.href.includes('/dev/');
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        
+        console.log("[System] Environment:", { isStaging, isLocal, hostname: window.location.hostname });
 
         if (isStaging || isLocal) {
             document.getElementById('dev-tag').style.display = 'block';
@@ -428,6 +485,7 @@
             if (resetSec) resetSec.style.display = 'block';
         } else {
             // 本番環境ではデバッグ機能を隠容
+            console.log("[System] Production mode.");
             const speedBtn = document.getElementById('debug-speed-btn');
             if (speedBtn) speedBtn.style.display = 'none';
         }

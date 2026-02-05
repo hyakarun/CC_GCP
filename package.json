@@ -7,10 +7,13 @@
         "start": "node index.js",
         "dev": "nodemon index.js",
         "dev-emulator": "export FIRESTORE_EMULATOR_HOST='127.0.0.1:8081' && concurrently \"firebase emulators:start --only firestore\" \"nodemon index.js\"",
-        "deploy": "python3 scripts/deploy.py"
+        "deploy": "python3 scripts/deploy.py",
+        "validate": "eslint . && stylelint \"**/*.css\"",
+        "verify": "python3 scripts/verify_app.py"
     },
     "dependencies": {
         "bcryptjs": "^3.0.3",
+        "compression": "^1.8.1",
         "cookie-parser": "^1.4.6",
         "cors": "^2.8.5",
         "dotenv": "^16.0.3",
@@ -18,8 +21,16 @@
         "firebase-admin": "^11.5.0"
     },
     "devDependencies": {
+        "@eslint/js": "^9.39.2",
         "concurrently": "^9.2.1",
-        "nodemon": "^2.0.21"
+        "eslint": "^9.39.2",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-prettier": "^5.5.5",
+        "globals": "^17.3.0",
+        "nodemon": "^2.0.21",
+        "prettier": "^3.8.1",
+        "stylelint": "^17.1.1",
+        "stylelint-config-standard": "^40.0.0"
     },
     "engines": {
         "node": ">=16.0.0"

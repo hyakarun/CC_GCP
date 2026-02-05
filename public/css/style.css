@@ -25,7 +25,6 @@ body {
     /* 笘�ｿｽ蜉��壽怙菴弱〒繧�200px縺ｯ遒ｺ菫昴☆繧具ｼ域ｽｰ繧碁亟豁｢�� */
     min-height: 250px;
     flex: none;
-
     background-color: #f8f9fa;
     position: relative;
     box-sizing: border-box;
@@ -115,8 +114,7 @@ body {
 
 .dungeon-list {
     flex: 1;
-    overflow-y: auto;
-    overflow-x: auto;
+    overflow: auto;
     /* Allow horizontal scroll */
     padding: 20px;
     display: grid;
@@ -445,7 +443,7 @@ hr {
 
 .equip-col h3 {
     font-size: 14px;
-    margin: 0 0 10px 0;
+    margin: 0 0 10px;
     text-align: center;
     border-bottom: 1px solid #ccc;
     padding-bottom: 5px;
@@ -1166,7 +1164,7 @@ hr {
 }
 
 .job-module h4 {
-    margin: 0 0 10px 0;
+    margin: 0 0 10px;
     color: #2c3e50;
     font-size: 14px;
     border-left: 3px solid #3498db;
