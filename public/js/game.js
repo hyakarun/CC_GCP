@@ -136,6 +136,24 @@ const imageCache = {};
 let saveTimer = 0;
 let isPaused = false;
 
+// --- 職業個別説明データ ---
+const JOB_DESCRIPTIONS = {
+    blacksmith:
+        "目標ゾーンを目指してゲージを溜めるミニゲームです。タイミングよくボタンを離し、目標値に近いほど高品質な武器を作成できます。熟練度が上がるとより強力な装備が作れるようになります。",
+    armorsmith:
+        "リズムに合わせて流れてくる光が中央に来た瞬間にクリックするミニゲームです。正確なリズムで叩くほど高品質な防具が完成します。",
+    toolsmith:
+        "表示される単語やランダムな文字列を正確にタイピングするミニゲームです。1回打ち終わるごとにアイテムが1個作成され、確率で会心の出来になります。",
+    miner: "場所と時間を決めて放置するだけで素材を収集できます。目的地や装備によって取得できる鉱石が変化するため、事前の準備が重要です。",
+    harvester:
+        "場所と時間を決めて放置して植物などを収集します。行き先には障害物があることもあるため、効率的なルート選択が鍵となります。",
+    farmer: "種を蒔き、手入れを行い、作物を収穫するサイクルを楽しむ農耕ゲームです。こまめなお世話が必要ですが、安定した食料供給が可能です。",
+    rancher:
+        "家畜に餌をやり、お世話をして、牛乳や肉などの副産物を得る酪農ゲームです。愛情を持って育てることで、より多くの報酬が得られます。",
+    repairer:
+        "タイピングを通じて装備の修繕を行います。正確な入力を続けることで、壊れかけた装備を新品同様に復元することが可能です。"
+};
+
 // --- ジョブミニゲーム用変数 ---
 let bsGaugeValue = 0;
 let bsIsPressing = false;
@@ -2819,6 +2837,19 @@ window.renderSpecificJobScreen = function (jobId) {
             document.getElementById("farm-emoji").innerText = jobId === "farmer" ? "🌱" : "🐣";
             farmProgress = 0;
             farmStep = 0;
+        }
+
+        // 個別説明の表示
+        const descArea = document.getElementById("job-description-area");
+        const descText = document.getElementById("job-description-text");
+        if (descArea && descText) {
+            const description = JOB_DESCRIPTIONS[jobId];
+            if (description) {
+                descText.innerText = description;
+                descArea.style.display = "block";
+            } else {
+                descArea.style.display = "none";
+            }
         }
     }
 };
