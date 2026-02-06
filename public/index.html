@@ -125,8 +125,11 @@
                 <div class="menu-item" onclick="switchScreen('dungeon')" id="menu-dungeon">ダンジョン</div>
                 <div class="menu-item" onclick="switchScreen('job')" id="menu-job">職業</div>
                 <div class="menu-item" onclick="switchScreen('equipment')" id="menu-equipment">装備</div>
-                <div class="menu-item" onclick="doLogout()" style="margin-top:auto; background-color:#c0392b;">ログアウト
+                <div class="menu-item" onclick="openNews()" style="margin-top:auto; background-color:#3498db; position: relative;">
+                    お知らせ
+                    <div id="news-badge" class="news-badge"></div>
                 </div>
+                <div class="menu-item" onclick="doLogout()" style="background-color:#c0392b;">ログアウト</div>
             </div>
 
             <div id="info-area">
@@ -139,8 +142,7 @@
                         <div class="status-row">
                             <span id="val-name" style="margin-right:10px; font-weight:bold;"></span>
                             <span class="label">Lv:</span> <span id="val-lv" class="val-big">1</span>
-                            <span style="font-size:14px; color:black; text-shadow:none; margin-left: auto; display: flex; align-items: center; gap: 10px;">
-                                <button id="btn-news" onclick="openNews()" style="font-size: 11px; padding: 2px 8px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">お知らせ</button>
+                            <span style="font-size:14px; color:black; text-shadow:none; margin-left: auto;">
                                 <span id="val-money">0</span> Mumel
                             </span>
                         </div>

@@ -1,5 +1,7 @@
 {
-    "config": {},
+    "config": {
+        "last_news_timestamp": 1738735200000
+    },
     "exp_table": [
         {
             "lv": 1,

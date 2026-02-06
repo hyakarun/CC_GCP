@@ -85,7 +85,9 @@ let player = {
         farmer: { lv: 1, exp: 0, nextExp: 100 },
         rancher: { lv: 1, exp: 0, nextExp: 100 },
         repairer: { lv: 1, exp: 0, nextExp: 100 }
-    }
+    },
+    // お知らせ
+    lastSeenNewsTimestamp: 0
 };
 
 // 職業マスタデータ（補正倍率など）
@@ -308,6 +310,7 @@ async function startGame() {
 
         applyConfig();
         initDungeonList();
+        checkNewsBadge();
 
         isGameRunning = true; // 正常にデータがロードされたらフラグを立てる
     } catch (e) {
@@ -3153,4 +3156,24 @@ function setJobMessage(msg, color) {
 window.openNews = function () {
     // noteなどの特定のURLへ遷移
     window.open("https://www.google.com", "_blank");
+
+    // 既読状態を更新
+    if (masterData && masterData.config && masterData.config.last_news_timestamp) {
+        player.lastSeenNewsTimestamp = masterData.config.last_news_timestamp;
+        const badge = document.getElementById("news-badge");
+        if (badge) badge.style.display = "none";
+        saveGame();
+    }
 };
+
+function checkNewsBadge() {
+    if (!masterData || !masterData.config || !masterData.config.last_news_timestamp) return;
+
+    const lastNews = masterData.config.last_news_timestamp;
+    const playerSeen = player.lastSeenNewsTimestamp || 0;
+
+    if (lastNews > playerSeen) {
+        const badge = document.getElementById("news-badge");
+        if (badge) badge.style.display = "block";
+    }
+}
