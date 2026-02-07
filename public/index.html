@@ -36,6 +36,13 @@
             <input type="password" id="password" placeholder="パスワード">
             <p id="login-error" class="error-msg"></p>
 
+            <div class="login-option" style="text-align: left; margin-bottom: 20px; font-size: 14px; color: #555;">
+                <label style="cursor: pointer; display: flex; align-items: center;">
+                    <input type="checkbox" id="remember_me" style="width: auto; margin-right: 8px;">
+                    ログイン情報を記憶する
+                </label>
+            </div>
+
             <div id="btn-group-login">
                 <button onclick="doLogin()">ログイン</button>
                 <button class="secondary" onclick="toggleMode()">新規登録へ</button>
@@ -482,6 +489,7 @@
         DEV MODE</div>
 
     <script src="js/config.js?v=gcp_v3"></script>
+    <script src="js/job_data.js"></script>
     <script src="js/game.js?v=gcp_v3"></script>
     <script>
         // 環境によるUI調整

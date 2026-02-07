@@ -91,41 +91,7 @@ let player = {
 };
 
 // 職業マスタデータ（補正倍率など）
-const JOB_MASTER = {
-    adventurer: {
-        name: "冒険者",
-        bonus: { str: 1.0, vit: 1.0, agi: 1.0, int: 1.0, dex: 1.0, luk: 1.0 }
-    },
-    miner: {
-        name: "炭鉱夫",
-        bonus: { str: 1.1, vit: 1.2, agi: 0.9, int: 0.8, dex: 1.0, luk: 1.1 }
-    },
-    harvester: {
-        name: "採取家",
-        bonus: { str: 0.9, vit: 1.0, agi: 1.1, int: 1.0, dex: 1.1, luk: 1.2 }
-    },
-    toolsmith: {
-        name: "道具職人",
-        bonus: { str: 0.8, vit: 0.9, agi: 1.0, int: 1.2, dex: 1.3, luk: 1.0 }
-    },
-    blacksmith: {
-        name: "武器職人",
-        bonus: { str: 1.2, vit: 1.1, agi: 0.8, int: 0.9, dex: 1.1, luk: 1.0 }
-    },
-    armorsmith: {
-        name: "防具職人",
-        bonus: { str: 1.0, vit: 1.3, agi: 0.8, int: 1.1, dex: 1.1, luk: 1.0 }
-    },
-    farmer: { name: "農家", bonus: { str: 1.0, vit: 1.1, agi: 1.1, int: 0.9, dex: 1.0, luk: 1.1 } },
-    rancher: {
-        name: "酪農家",
-        bonus: { str: 1.1, vit: 1.2, agi: 0.9, int: 0.8, dex: 1.0, luk: 1.2 }
-    },
-    repairer: {
-        name: "修繕屋",
-        bonus: { str: 0.9, vit: 1.1, agi: 1.0, int: 1.2, dex: 1.2, luk: 1.0 }
-    }
-};
+// 職業マスタデータは job_data.js に移動しました
 
 let enemies = [];
 let damageTexts = [];
@@ -137,22 +103,7 @@ let saveTimer = 0;
 let isPaused = false;
 
 // --- 職業個別説明データ ---
-const JOB_DESCRIPTIONS = {
-    blacksmith:
-        "目標ゾーンを目指してゲージを溜めるミニゲームです。タイミングよくボタンを離し、目標値に近いほど高品質な武器を作成できます。熟練度が上がるとより強力な装備が作れるようになります。",
-    armorsmith:
-        "リズムに合わせて流れてくる光が中央に来た瞬間にクリックするミニゲームです。正確なリズムで叩くほど高品質な防具が完成します。",
-    toolsmith:
-        "表示される単語やランダムな文字列を正確にタイピングするミニゲームです。1回打ち終わるごとにアイテムが1個作成され、確率で会心の出来になります。",
-    miner: "場所と時間を決めて放置するだけで素材を収集できます。目的地や装備によって取得できる鉱石が変化するため、事前の準備が重要です。",
-    harvester:
-        "場所と時間を決めて放置して植物などを収集します。行き先には障害物があることもあるため、効率的なルート選択が鍵となります。",
-    farmer: "種を蒔き、手入れを行い、作物を収穫するサイクルを楽しむ農耕ゲームです。こまめなお世話が必要ですが、安定した食料供給が可能です。",
-    rancher:
-        "家畜に餌をやり、お世話をして、牛乳や肉などの副産物を得る酪農ゲームです。愛情を持って育てることで、より多くの報酬が得られます。",
-    repairer:
-        "タイピングを通じて装備の修繕を行います。正確な入力を続けることで、壊れかけた装備を新品同様に復元することが可能です。"
-};
+// 職業個別説明データは job_data.js に移動しました
 
 // --- ジョブミニゲーム用変数 ---
 let bsGaugeValue = 0;
@@ -236,11 +187,12 @@ window.doLogin = async function () {
         errorEl.innerText = "入力してください";
         return;
     }
+    const rememberMe = document.getElementById("remember_me").checked;
     try {
         const res = await fetch(API_BASE + "/login.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email, password, remember_me: rememberMe })
         });
         const data = await res.json();
         if (data.status === "success") {
