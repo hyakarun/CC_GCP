@@ -3138,7 +3138,7 @@ function setJobMessage(msg, color) {
 // --- お知らせ機能 ---
 window.openNews = function () {
     // noteなどの特定のURLへ遷移
-    window.open("https://www.google.com", "_blank");
+    window.open("https://note.com/tsukuro_team/m/maad6f21433fd", "_blank");
 
     // 既読状態を更新
     if (masterData && masterData.config && masterData.config.last_news_timestamp) {
