@@ -3136,7 +3136,8 @@ function setJobMessage(msg, color) {
 }
 
 // --- お知らせ機能 ---
-window.openNews = function () {
+function openNews() {
+    console.log("Opening news...");
     // noteなどの特定のURLへ遷移
     window.open("https://note.com/tsukuro_team/m/maad6f21433fd", "_blank");
 
