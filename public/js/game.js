@@ -98,6 +98,14 @@ let damageTexts = [];
 const lanes = [0.2, 0.45, 0.7];
 let spawnTimer = 0;
 let masterData = null;
+const masterDataMap = {
+    items: new Map(),
+    skills: new Map(),
+    enemies: new Map(),
+    options: new Map(),
+    dungeons: new Map(),
+    exp_table: new Map()
+};
 const imageCache = {};
 let saveTimer = 0;
 let isPaused = false;
@@ -277,6 +285,9 @@ async function startGame() {
         if (!res.ok) throw new Error("Failed to load master_data.json");
         masterData = await res.json();
         console.log("[System] Master data loaded.");
+
+        // ★最適化: マスタデータのインデックス作成
+        indexMasterData();
 
         applyConfig();
         initDungeonList();
@@ -1210,7 +1221,7 @@ function getSkillBonuses() {
 
     for (let skillId in player.skills) {
         const level = player.skills[skillId];
-        const master = masterData.skills.find((s) => s.id == skillId);
+        const master = masterDataMap.skills.get(Number(skillId));
         if (master && master.type === "passive" && master.stat) {
             const val = (master.val || 0) * level;
             if (skillBonus[master.stat] !== undefined) {
@@ -1249,11 +1260,11 @@ function calcBattleStats() {
         res: skillBonus.res
     };
 
-    if (masterData && masterData.items) {
+    if (masterData) {
         for (let part in player.equipment) {
             let eqItem = player.equipment[part];
             if (eqItem) {
-                let master = masterData.items.find((i) => i.id == eqItem.id);
+                let master = masterDataMap.items.get(Number(eqItem.id));
                 if (master) {
                     for (let key in bonus) {
                         if (master[key]) bonus[key] += Number(master[key]);
@@ -1327,7 +1338,7 @@ function calcBattleStats() {
     rangeTargetParts.forEach((part) => {
         const eqItem = player.equipment[part];
         if (eqItem) {
-            const master = masterData.items.find((i) => i.id == eqItem.id);
+            const master = masterDataMap.items.get(Number(eqItem.id));
             // rangeが設定されており、かつ0より大きい場合のみ倍率として適用
             if (master && master.range && Number(master.range) > 0) {
                 finalRange *= Number(master.range);
@@ -1688,7 +1699,7 @@ function update() {
             let activeSkill = null;
             if (masterData && masterData.skills) {
                 for (let skillId in player.skills) {
-                    const master = masterData.skills.find((s) => s.id == skillId);
+                    const master = masterDataMap.skills.get(Number(skillId));
                     if (
                         master &&
                         (!player.skill_cooldowns[skillId] || player.skill_cooldowns[skillId] <= 0)
@@ -1879,7 +1890,7 @@ function dungeonClearLogic() {
 
 function getDungeonData(id) {
     if (masterData && masterData.dungeons)
-        return masterData.dungeons.find((d) => Number(d.id) === id);
+        return masterDataMap.dungeons.get(Number(id));
     return null;
 }
 
@@ -1900,7 +1911,7 @@ function spawnBoss(dData) {
     const bossId = Number(dData.boss_id);
     let enemyData = null;
     if (masterData && masterData.enemies)
-        enemyData = masterData.enemies.find((e) => Number(e.id) === bossId);
+        enemyData = masterDataMap.enemies.get(Number(bossId));
     if (!enemyData)
         enemyData = {
             name: "Boss",
@@ -1952,7 +1963,7 @@ function spawnNormalEnemy(dData) {
     else if (masterData && masterData.enemies)
         allowedEnemyIds = masterData.enemies.map((e) => Number(e.id));
     let targetId = allowedEnemyIds[Math.floor(Math.random() * allowedEnemyIds.length)];
-    let enemyData = masterData.enemies.find((e) => Number(e.id) === targetId);
+    let enemyData = masterDataMap.enemies.get(Number(targetId));
     if (!enemyData)
         enemyData = {
             name: "Slime",
@@ -2001,7 +2012,7 @@ function checkEnemyDrops(enemy) {
 
             if (pick < weight) {
                 // ドロップ成功
-                const itemMaster = masterData.items.find((it) => Number(it.id) == Number(id));
+                const itemMaster = masterDataMap.items.get(Number(id));
 
                 if (!itemMaster) {
                     console.error(`[DropCheck] Item Master NOT FOUND for ID: ${id}`);
@@ -2075,7 +2086,7 @@ function checkLevelUp() {
         let rewardSp = 3;
         let rewardSkillSp = 1;
         if (masterData && masterData.exp_table) {
-            const row = masterData.exp_table.find((r) => Number(r.lv) === player.lv);
+            const row = masterDataMap.exp_table.get(Number(player.lv));
             if (row) {
                 nextReq = Number(row.next_exp);
                 rewardSp = Number(row.reward_sp);
@@ -2096,7 +2107,7 @@ function checkLevelUp() {
 
             // 次のレベルのEXPテーブルを読み込む
             if (masterData && masterData.exp_table) {
-                const nr = masterData.exp_table.find((r) => Number(r.lv) === player.lv);
+                const nr = masterDataMap.exp_table.get(Number(player.lv));
                 if (nr) player.nextExp = Number(nr.next_exp);
             }
             levelledUp = true;
@@ -2347,11 +2358,11 @@ function updateUI() {
 
     // 装備ボーナスの集計 (表示用)
     let bonus = { str: 0, vit: 0, agi: 0, int: 0, dex: 0, luk: 0 };
-    if (masterData && masterData.items) {
+    if (masterData) {
         for (let part in player.equipment) {
             let eqItem = player.equipment[part];
             if (eqItem) {
-                let master = masterData.items.find((i) => i.id == eqItem.id);
+                let master = masterDataMap.items.get(Number(eqItem.id));
                 if (master) {
                     for (let k in bonus) {
                         if (master[k]) bonus[k] += Number(master[k]);
@@ -2480,7 +2491,7 @@ window.renderSkillScreen = function () {
         let slotClass = "skill-slot empty";
 
         if (equippedId) {
-            const skill = masterData.skills.find((s) => s.id == equippedId);
+            const skill = masterDataMap.skills.get(Number(equippedId));
             const skillName = skill ? skill.name : "Unknown";
             const iconUrl = `images/${skill && skill.image ? skill.image : "skill/default.png"}`;
             slotClass = "skill-slot filled";
@@ -2681,7 +2692,7 @@ window.renderCombatSkills = function () {
         if (skillId) {
             const skill =
                 masterData && masterData.skills
-                    ? masterData.skills.find((s) => s.id == skillId)
+                    ? masterDataMap.skills.get(Number(skillId))
                     : null;
             const iconUrl = `images/${skill && skill.image ? skill.image : "skill/default.png"}`;
 
@@ -2722,7 +2733,7 @@ window.updateCombatSkillUI = function () {
         if (overlay) {
             let height = "0%";
             if (player.skill_cooldowns && player.skill_cooldowns[skillId] > 0) {
-                const skill = masterData.skills.find((s) => s.id == skillId);
+                const skill = masterDataMap.skills.get(Number(skillId));
                 if (skill) {
                     const maxCD = (skill.cooldown || 0) * 60;
                     const current = player.skill_cooldowns[skillId];
@@ -3160,4 +3171,18 @@ function checkNewsBadge() {
         const badge = document.getElementById("news-badge");
         if (badge) badge.style.display = "block";
     }
+}
+
+// --- ユーティリティ ---
+function indexMasterData() {
+    if (!masterData) return;
+    const collections = ["items", "skills", "enemies", "options", "dungeons", "exp_table"];
+    collections.forEach((key) => {
+        if (masterData[key]) {
+            masterData[key].forEach((item) => {
+                masterDataMap[key].set(Number(item.id || item.lv), item);
+            });
+        }
+    });
+    console.log("[System] Master data indexed.");
 }

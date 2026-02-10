@@ -12,10 +12,12 @@ module.exports = (db, cacheUtils) => {
             if (!userEmail) return res.status(401).json({ status: "error", message: "Not logged in" });
 
             const { save_data } = req.body;
+            const startTime = Date.now();
             await db.collection("users").doc(userEmail).update({
                 save_data: save_data,
                 updated_at: admin.firestore.FieldValue.serverTimestamp()
             });
+            console.log(`[Timer] save_game for ${userEmail} took ${Date.now() - startTime}ms`);
 
             // キャッシュを更新
             if (updateSaveData) {
@@ -42,7 +44,10 @@ module.exports = (db, cacheUtils) => {
                 return res.json({ status: "success", save_data: cached.save_data });
             }
 
+            const startTime = Date.now();
             const doc = await db.collection("users").doc(userEmail).get();
+            console.log(`[Timer] load_game DB Fetch for ${userEmail} took ${Date.now() - startTime}ms`);
+            
             if (!doc.exists)
                 return res.status(404).json({ status: "error", message: "User not found" });
 

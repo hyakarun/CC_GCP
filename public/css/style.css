@@ -1058,9 +1058,8 @@ hr {
     width: 100%;
     height: 0%;
     /* 0% = 完了, 100% = クールダウン開始時 */
-    background-color: rgba(0, 0, 0, 0.7);
-    transition: height 0.1s linear;
-    /* JSで随時更新するのでlinear */
+    background-color: rgba(0, 0, 0, 1.0);
+    /* 消去: transition: height 0.1s linear; */
 }
 
 /* スキルリスト画面 */
