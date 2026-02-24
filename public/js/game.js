@@ -2469,10 +2469,6 @@ window.renderSkillScreen = function () {
     let html = `
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h3>スキル設定</h3>
-        <button onclick="player.skill_sp = (player.skill_sp || 0) + 10; saveGame(); renderSkillScreen();" 
-            style="font-size:10px; padding:2px 5px; background:#e67e22; color:white; border:none; border-radius:3px; cursor:pointer;">
-            Dev: SP+10
-        </button>
     </div>
   `;
 

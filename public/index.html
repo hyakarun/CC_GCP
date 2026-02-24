@@ -235,7 +235,7 @@
                     <div class="menu-item" onclick="switchScreen('dungeon')" id="menu-dungeon">
                         ダンジョン
                     </div>
-                    <div class="menu-item" onclick="switchScreen('job')" id="menu-job">職業</div>
+                    <div class="menu-item" onclick="switchScreen('job')" id="menu-job" style="display: none">職業</div>
                     <div class="menu-item" onclick="switchScreen('equipment')" id="menu-equipment">
                         装備
                     </div>
@@ -1126,16 +1126,21 @@
                 hostname: window.location.hostname
             });
 
+            /*
             if (isStaging || isLocal) {
                 document.getElementById("dev-tag").style.display = "block";
                 document.body.style.backgroundColor = "#001a00"; // 開発用：深い緑
                 const resetSec = document.getElementById("reset-section");
                 if (resetSec) resetSec.style.display = "block";
             } else {
-                // 本番環境ではデバッグ機能を隠容
-                console.log("[System] Production mode.");
+            */
+            if (true) {
+                // 本番環境（または本番と同じ見た目）ではデバッグ機能を隠容
+                console.log("[System] Production mode UI applied.");
                 const speedBtn = document.getElementById("debug-speed-btn");
                 if (speedBtn) speedBtn.style.display = "none";
+                const devTag = document.getElementById("dev-tag");
+                if (devTag) devTag.style.display = "none";
             }
         </script>
     </body>
