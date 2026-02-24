@@ -9,7 +9,8 @@ module.exports = (db, cacheUtils) => {
     router.post("/save_game.php", async (req, res) => {
         try {
             const userEmail = req.cookies.user_email;
-            if (!userEmail) return res.status(401).json({ status: "error", message: "Not logged in" });
+            if (!userEmail)
+                return res.status(401).json({ status: "error", message: "Not logged in" });
 
             const { save_data } = req.body;
             const startTime = Date.now();
@@ -35,7 +36,8 @@ module.exports = (db, cacheUtils) => {
     router.get("/load_game.php", async (req, res) => {
         try {
             const userEmail = req.cookies.user_email;
-            if (!userEmail) return res.status(401).json({ status: "error", message: "Not logged in" });
+            if (!userEmail)
+                return res.status(401).json({ status: "error", message: "Not logged in" });
 
             // キャッシュチェック
             const cached = getFromCache(userEmail);
@@ -46,8 +48,10 @@ module.exports = (db, cacheUtils) => {
 
             const startTime = Date.now();
             const doc = await db.collection("users").doc(userEmail).get();
-            console.log(`[Timer] load_game DB Fetch for ${userEmail} took ${Date.now() - startTime}ms`);
-            
+            console.log(
+                `[Timer] load_game DB Fetch for ${userEmail} took ${Date.now() - startTime}ms`
+            );
+
             if (!doc.exists)
                 return res.status(404).json({ status: "error", message: "User not found" });
 

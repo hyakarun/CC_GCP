@@ -64,7 +64,9 @@ module.exports = (db, cacheUtils) => {
             const doc = await userRef.get();
 
             if (!doc.exists || !bcrypt.compareSync(password, doc.data().password)) {
-                return res.status(401).json({ status: "error", message: "Invalid email or password" });
+                return res
+                    .status(401)
+                    .json({ status: "error", message: "Invalid email or password" });
             }
 
             // Cookieにメールアドレスを保存（簡易セッション）
@@ -95,15 +97,16 @@ module.exports = (db, cacheUtils) => {
 
     // 3. 新規登録
     router.post("/register.php", async (req, res) => {
-        try { // Using global admin if needed, but here we likely need to pass admin or use db directly logic.
-              // Wait, previous code used `admin.firestore.FieldValue.serverTimestamp()`.
-              // We need admin instance passed or imported. 
-              // Since db is passed, we might not have admin.
-              // Let's assume we can get FieldValue from db or pass admin.
-              // Actually, best to pass `admin` object too or use `require('firebase-admin')` here if initialized globally?
-              // `firebase-admin` initialization is singleton so require('firebase-admin') should work if initialized in index.js.
+        try {
+            // Using global admin if needed, but here we likely need to pass admin or use db directly logic.
+            // Wait, previous code used `admin.firestore.FieldValue.serverTimestamp()`.
+            // We need admin instance passed or imported.
+            // Since db is passed, we might not have admin.
+            // Let's assume we can get FieldValue from db or pass admin.
+            // Actually, best to pass `admin` object too or use `require('firebase-admin')` here if initialized globally?
+            // `firebase-admin` initialization is singleton so require('firebase-admin') should work if initialized in index.js.
             const admin = require("firebase-admin");
-            
+
             let { email, password, name } = req.body;
             if (!email || !password)
                 return res.status(400).json({ status: "error", message: "Missing fields" });

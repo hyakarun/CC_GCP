@@ -1889,8 +1889,7 @@ function dungeonClearLogic() {
 }
 
 function getDungeonData(id) {
-    if (masterData && masterData.dungeons)
-        return masterDataMap.dungeons.get(Number(id));
+    if (masterData && masterData.dungeons) return masterDataMap.dungeons.get(Number(id));
     return null;
 }
 
@@ -1910,8 +1909,7 @@ function spawnBoss(dData) {
     if (enemies.length > 0) return;
     const bossId = Number(dData.boss_id);
     let enemyData = null;
-    if (masterData && masterData.enemies)
-        enemyData = masterDataMap.enemies.get(Number(bossId));
+    if (masterData && masterData.enemies) enemyData = masterDataMap.enemies.get(Number(bossId));
     if (!enemyData)
         enemyData = {
             name: "Boss",
@@ -2691,9 +2689,7 @@ window.renderCombatSkills = function () {
 
         if (skillId) {
             const skill =
-                masterData && masterData.skills
-                    ? masterDataMap.skills.get(Number(skillId))
-                    : null;
+                masterData && masterData.skills ? masterDataMap.skills.get(Number(skillId)) : null;
             const iconUrl = `images/${skill && skill.image ? skill.image : "skill/default.png"}`;
 
             if (skill && player.skill_cooldowns && player.skill_cooldowns[skillId] > 0) {
@@ -3159,7 +3155,7 @@ function openNews() {
         if (badge) badge.style.display = "none";
         saveGame();
     }
-};
+}
 
 function checkNewsBadge() {
     if (!masterData || !masterData.config || !masterData.config.last_news_timestamp) return;
