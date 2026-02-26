@@ -567,8 +567,7 @@ hr {
 .delete-btn {
     position: absolute;
     right: 5px;
-    top: 50%;
-    transform: translateY(-50%);
+    bottom: 5px;
     background-color: #e74c3c;
     color: white;
     border: none;

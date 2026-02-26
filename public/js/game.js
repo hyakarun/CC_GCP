@@ -807,15 +807,21 @@ function renderEquipmentScreen() {
         lockBtn.className = "lock-btn";
         lockBtn.innerHTML = entry.item.isLocked ? "🔒" : "🔓";
         lockBtn.style.position = "absolute";
-        lockBtn.style.right = "50px"; // ゴミ箱の左隣に配置
-        lockBtn.style.top = "10px";
+        lockBtn.style.right = "5px"; // 右上に配置
+        lockBtn.style.top = "5px";
         lockBtn.style.background = "transparent";
         lockBtn.style.border = "none";
         lockBtn.style.fontSize = "16px";
         lockBtn.style.cursor = "pointer";
-        lockBtn.onclick = (e) => {
+        // mousedownイベントをキャッチして親(装備セット)への伝播を止める
+        lockBtn.onmousedown = (e) => {
+            e.preventDefault();
             e.stopPropagation();
             toggleItemLock(entry.idx);
+        };
+        // clickも念の為止める
+        lockBtn.onclick = (e) => {
+            e.stopPropagation();
         };
         div.appendChild(lockBtn);
 
@@ -833,6 +839,9 @@ function renderEquipmentScreen() {
     // イベントデリゲーションの確立 (まだ無ければ)
     if (!candidateContainer.dataset.hasListener) {
         candidateContainer.addEventListener("mousedown", (e) => {
+            // もしボタン(🗑️や🔒)をクリックしたなら、ここでの装備着脱処理はパスする
+            if (e.target.closest("button")) return;
+
             const row = e.target.closest(".candidate-item-row");
             if (!row) return;
 
