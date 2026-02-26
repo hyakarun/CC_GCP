@@ -785,11 +785,39 @@ function renderEquipmentScreen() {
         const delBtn = document.createElement("button");
         delBtn.className = "delete-btn";
         delBtn.innerHTML = "🗑️";
+        
+        // ロックされている場合はゴミ箱ボタンを少し薄くするなど視覚的工夫
+        if (entry.item.isLocked) {
+            delBtn.style.opacity = "0.3";
+            delBtn.style.cursor = "not-allowed";
+        }
+        
         delBtn.onclick = (e) => {
             e.stopPropagation();
+            if (entry.item.isLocked) {
+                spawnDamageText(window.innerWidth / 2, window.innerHeight / 2, "ロックされています", "#e74c3c", 20, false, true);
+                return;
+            }
             confirmDeleteItem(entry.idx);
         };
         div.appendChild(delBtn);
+
+        // ロックボタン
+        const lockBtn = document.createElement("button");
+        lockBtn.className = "lock-btn";
+        lockBtn.innerHTML = entry.item.isLocked ? "🔒" : "🔓";
+        lockBtn.style.position = "absolute";
+        lockBtn.style.right = "50px"; // ゴミ箱の左隣に配置
+        lockBtn.style.top = "10px";
+        lockBtn.style.background = "transparent";
+        lockBtn.style.border = "none";
+        lockBtn.style.fontSize = "16px";
+        lockBtn.style.cursor = "pointer";
+        lockBtn.onclick = (e) => {
+            e.stopPropagation();
+            toggleItemLock(entry.idx);
+        };
+        div.appendChild(lockBtn);
 
         div.onmouseenter = () => {
             currentHoveredCandidate = entry.idx;
@@ -904,6 +932,99 @@ function executeDelete(skipConfirm) {
         const expireTime = Date.now() + 15 * 60 * 1000;
         localStorage.setItem("cc_skip_delete_confirm_" + currentUserEmail, expireTime);
     }
+}
+
+function toggleItemLock(index) {
+    if (index === null || index === undefined) return;
+    const item = player.inventory[index];
+    if (!item) return;
+
+    // ロック状態を反転 (未定義なら true にする)
+    item.isLocked = !item.isLocked;
+
+    // 画面・データ更新
+    renderEquipmentScreen();
+    saveGame();
+    
+    // スナックバー的な通知 (必要に応じて)
+    const master = masterData.items.find((i) => i.id == item.id);
+    const name = master ? master.name : "アイテム";
+    const statusMsg = item.isLocked ? "ロックしました" : "ロックを解除しました";
+    addCombatLog(`🔒 ${name} を${statusMsg}`, "#f39c12");
+}
+
+// --- 一括売却機能 ---
+window.openBulkSellDialog = function() {
+    document.getElementById("bulk-sell-overlay").style.display = "flex";
+};
+
+window.closeBulkSellDialog = function() {
+    document.getElementById("bulk-sell-overlay").style.display = "none";
+};
+
+window.executeBulkSell = function() {
+    // 選択されたレアリティ上限を取得 (0:コモン, 1:アンコモン, 2:レア)
+    const radios = document.getElementsByName("bulk_sell_rarity");
+    let maxRarity = 0;
+    for (let i = 0; i < radios.length; i++) {
+        if (radios[i].checked) {
+            maxRarity = parseInt(radios[i].value, 10);
+            break;
+        }
+    }
+
+    let sellCount = 0;
+    let earnedMoney = 0;
+
+    // 現在装備中のアイテムの実体参照を取得
+    const equippedItems = Object.values(player.equipment).filter(hq => hq !== null);
+
+    // インデックスのズレを防ぐため後ろからループして削除
+    for (let i = player.inventory.length - 1; i >= 0; i--) {
+        const item = player.inventory[i];
+        
+        // 1. ロックされていないか？
+        if (item.isLocked) continue;
+        
+        // 2. 装備中でないか？
+        const isEquipped = equippedItems.some((eq) => eq.id === item.id && eq.exp === item.exp && eq.rarity === item.rarity); // ※厳密な一致判定が必要だが、一旦オブジェクト参照またはID比較
+        // さらに安全に、装備中のアイテムオブジェクトそのものと比較
+        const isStrictlyEquipped = equippedItems.includes(item);
+        if (isStrictlyEquipped) continue;
+
+        const master = masterData.items.find((m) => m.id == item.id);
+        if (!master) continue;
+
+        // レアリティ判定
+        let r = item.rarity !== undefined ? item.rarity : 0;
+        if (item.rarity === undefined && master.rank > 1) {
+            r = Math.max(0, master.rank - 1);
+        }
+
+        // 条件に合致するか
+        if (r <= maxRarity) {
+            // 売却価格計算 (アイテム価格 + オプション価値などのロジックがあればここで)
+            // とりあえず一律 10 Mumel + rankボーナス程度とする (実際の売買ロジックに合わせる)
+            const price = 10 + (master.rank || 1) * 2;
+            earnedMoney += price;
+            sellCount++;
+
+            // インベントリから削除
+            player.inventory.splice(i, 1);
+        }
+    }
+
+    if (sellCount > 0) {
+        player.money = (player.money || 0) + earnedMoney;
+        addCombatLog(`💰 装備を ${sellCount} 個一括売却し、${earnedMoney} Mumel獲得しました！`, "#f1c40f");
+        saveGame();
+        renderEquipmentScreen();
+        if (typeof updateUI === "function") updateUI();
+    } else {
+        addCombatLog(`一括売却の対象となる装備がありませんでした。`, "#7f8c8d");
+    }
+
+    closeBulkSellDialog();
 }
 
 function selectSlot(partKey) {
