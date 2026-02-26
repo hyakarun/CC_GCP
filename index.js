@@ -12,16 +12,11 @@ const gameRoutes = require("./routes/game");
 // Cache Utils
 const cacheUtils = require("./utils/cache");
 
-// Firebase Admin SDK 初期化
-// 省略... (既存の初期化コード)
-try {
+// Firebase Admin SDK 初期化 (プロジェクトIDを明示的に固定)
+if (admin.apps.length === 0) {
     admin.initializeApp({
-        credential: admin.credential.applicationDefault()
+        projectId: "cheychip"
     });
-} catch (e) {
-    if (admin.apps.length === 0) {
-        admin.initializeApp();
-    }
 }
 const db = admin.firestore();
 

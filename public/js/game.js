@@ -1,3 +1,11 @@
+// 職業マスタ (最小構成)
+const JOB_MASTER = {
+    adventurer: {
+        name: "冒険者",
+        bonus: { str: 1.0, vit: 1.0, agi: 1.0, int: 1.0, dex: 1.0, luk: 1.0 }
+    }
+};
+
 // --- Game Configuration ---
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -157,7 +165,7 @@ window.onload = async function () {
     try {
         const apiPath = API_BASE + "/check_session.php";
         console.log("[System] Checking session at:", apiPath);
-        const res = await fetch(apiPath);
+        const res = await fetch(apiPath, { credentials: 'include' });
         if (!res.ok) throw new Error("Session request failed with status: " + res.status);
         const data = await res.json();
         console.log("[System] Session data:", data);
@@ -200,7 +208,8 @@ window.doLogin = async function () {
         const res = await fetch(API_BASE + "/login.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password, remember_me: rememberMe })
+            body: JSON.stringify({ email, password, remember_me: rememberMe }),
+            credentials: 'include'
         });
         const data = await res.json();
         if (data.status === "success") {
@@ -229,7 +238,8 @@ window.doRegister = async function () {
         const res = await fetch(API_BASE + "/register.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, email, password })
+            body: JSON.stringify({ name, email, password }),
+            credentials: 'include'
         });
         const data = await res.json();
         if (data.status === "success") {
@@ -245,7 +255,7 @@ window.doRegister = async function () {
 
 window.doLogout = async function () {
     if (!confirm("ログアウトしますか？")) return;
-    await fetch(API_BASE + "/logout.php");
+    await fetch(API_BASE + "/logout.php", { credentials: 'include' });
     location.reload();
 };
 
@@ -508,19 +518,17 @@ let advTypeInterval = null;
 let isAdvTyping = false;
 
 window.checkStory = function (timing) {
-    // Story disabled for now
-    return;
-    /*
+    // 開発環境のみ有効
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const isStaging = window.location.href.includes("/dev/");
+    if (!(isLocal || isStaging)) return;
+
     if (!masterData || !masterData.stories) return;
     const dId = player.currentDungeonId;
 
     // 該当するストーリーデータを抽出
-    // timingが 'wave_N' の場合は wave 数もチェック
     let targetStories = masterData.stories.filter((s) => {
-        // データ型の不一致を防ぐため Number 化して比較
         if (Number(s.dungeon_id) !== dId) return false;
-
-        // waveクリア時の判定 (例: timing="wave_1", "wave_2"...)
         if (timing === "wave_clear") {
             return s.timing === `wave_${player.currentWave}`;
         }
@@ -528,22 +536,15 @@ window.checkStory = function (timing) {
     });
 
     if (targetStories.length > 0) {
-        // seq順にソート
         targetStories.sort((a, b) => Number(a.seq) - Number(b.seq));
-
-        // データ形式を playAdventure 用に変換
-        // CSV項目: speaker, message, left_image, right_image
-        // playAdventure期待: name, text, left, right
         const scene = targetStories.map((s) => ({
             name: s.speaker,
             text: s.message,
-            left: s.left_image, // "none" or "path" or ""
-            right: s.right_image // "none" or "path" or ""
+            left: s.left_image,
+            right: s.right_image
         }));
-
         playAdventure(scene);
     }
-    */
 };
 
 window.startAdventureTest = function () {
@@ -1391,7 +1392,8 @@ async function saveGame(force = false) {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ save_data: currentDataString }),
-                keepalive: true // ページを閉じても送信を継続
+                keepalive: true, // ページを閉じても送信を継続
+                credentials: 'include'
             });
             console.log("[System] Game saved to server.");
             localStorage.setItem("cc_save_data_" + currentUserEmail, currentDataString);
@@ -1424,7 +1426,7 @@ async function loadGame() {
 
     // ★変更: サーバーから読み込み
     try {
-        const res = await fetch(API_BASE + "/load_game.php");
+        const res = await fetch(API_BASE + "/load_game.php", { credentials: 'include' });
         const data = await res.json();
         if (data.status === "success" && data.save_data) {
             applySaveData(data.save_data);
@@ -2160,18 +2162,23 @@ function generateOptions(rarity) {
     const count = Math.floor(Math.random() * 4);
     if (count <= 0) return [];
 
-    // レアリティによるフィルタリング
-    // 指定されたレアリティ「以下」のオプションが付く、あるいは等しいもの？
-    // ユーザー指示「rareで設定したレアリティの装備に付く可能性があります」
-    // -> そのレアリティ"専用"とも読めるが、通常は下位互換性がある。
-    // ここでは「そのレアリティのオプション」だけを抽選対象とする（なければ下位を検索）
-    // 必須: CSVに rare カラムがあること
-    let candidates = masterData.options.filter((o) => (Number(o.rare) || 0) === rarity);
+    // レアリティによるオプションレベルの制限
+    // RARITY_MAX_LEVEL: [1, 2, 3, 4, 5, 7, 9, 10]
+    const maxAllowedLv = RARITY_MAX_LEVEL[rarity] || 1;
 
-    // もしそのレアリティのオプションが定義されていなければ、下位のレアリティも含める（安全策）
-    if (candidates.length === 0) {
-        candidates = masterData.options.filter((o) => (Number(o.rare) || 0) <= rarity);
-    }
+    // オプションレベルの判定ロジック
+    // 各オプションアイテムの名称（"STR Lv1"など）または ID からレベルを抽出
+    let candidates = masterData.options.filter((o) => {
+        let lv = 1;
+        const match = o.name.match(/Lv(\d+)/);
+        if (match) {
+            lv = parseInt(match[1]);
+        } else {
+            // IDによるフォールバック (1-10=Lv1-10, 11-20=Lv1-10...)
+            lv = ((Number(o.id) - 1) % 10) + 1;
+        }
+        return lv <= maxAllowedLv;
+    });
 
     if (candidates.length === 0) return [];
 
@@ -2206,8 +2213,7 @@ function generateOptions(rarity) {
                 id: selected.id,
                 name: optName,
                 stat: selected.stat,
-                val: val,
-                level: level
+                val: val
             });
         }
     }
@@ -2349,10 +2355,10 @@ function updateUI() {
     safeText("val-sp", player.sp);
     safeText("val-money", player.money);
 
-    // 職業ボタンの名称更新
-    const currentJobId = player.currentJob || "adventurer";
-    const jobName = JOB_MASTER[currentJobId] ? JOB_MASTER[currentJobId].name : "職業";
-    safeText("menu-job", jobName);
+    // 職業ボタンの名称更新 (UI削除済み)
+    // const currentJobId = player.currentJob || "adventurer";
+    // const jobName = JOB_MASTER[currentJobId] ? JOB_MASTER[currentJobId].name : "職業";
+    // safeText("menu-job", jobName);
 
     // 装備ボーナスの集計 (表示用)
     let bonus = { str: 0, vit: 0, agi: 0, int: 0, dex: 0, luk: 0 };
@@ -3178,3 +3184,15 @@ function indexMasterData() {
     });
     console.log("[System] Master data indexed.");
 }
+
+// キーボード操作の追加
+document.addEventListener("keydown", (e) => {
+    // アドベンチャー画面が表示されている場合
+    const advOverlay = document.getElementById("adventure-overlay");
+    if (advOverlay && advOverlay.style.display !== "none") {
+        if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            nextAdventureMsg();
+        }
+    }
+});

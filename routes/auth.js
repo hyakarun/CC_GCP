@@ -8,7 +8,7 @@ module.exports = (db, cacheUtils) => {
     // 1. セッションチェック
     router.get("/check_session.php", async (req, res) => {
         try {
-            const userEmail = req.cookies.user_email;
+            const userEmail = req.cookies.__session;
             if (userEmail) {
                 // キャッシュチェック
                 const cached = getFromCache(userEmail);
@@ -25,6 +25,8 @@ module.exports = (db, cacheUtils) => {
                 const doc = await db.collection("users").doc(userEmail).get();
                 if (doc.exists) {
                     const userData = doc.data();
+                    const sd = JSON.parse(userData.save_data || "{}");
+                    console.log(`[DEBUG] check_session for ${userEmail} returning Lv ${sd.lv}`);
                     // キャッシュに保存
                     setToCache(userEmail, userData);
 
@@ -39,7 +41,7 @@ module.exports = (db, cacheUtils) => {
                     console.log(
                         `Cookie exists for ${userEmail} but user not found in Firestore. Clearing cookie.`
                     );
-                    res.clearCookie("user_email", { path: "/" });
+                    res.clearCookie("__session", { path: "/" });
                     res.json({ status: "not_logged_in" });
                 }
             } else {
@@ -82,9 +84,11 @@ module.exports = (db, cacheUtils) => {
                 cookieOptions.maxAge = 30 * 24 * 60 * 60 * 1000;
             }
 
-            res.cookie("user_email", email, cookieOptions);
+            res.cookie("__session", email, cookieOptions);
 
             const userData = doc.data();
+            const sd = JSON.parse(userData.save_data || "{}");
+            console.log(`[DEBUG] login for ${email} returning Lv ${sd.lv}`);
             // キャッシュに保存
             setToCache(email, userData);
 
@@ -137,7 +141,7 @@ module.exports = (db, cacheUtils) => {
 
     // 6. ログアウト
     router.get("/logout.php", (req, res) => {
-        res.clearCookie("user_email", { path: "/" });
+        res.clearCookie("__session", { path: "/" });
         res.json({ status: "success" });
     });
 
